@@ -1,10 +1,10 @@
 package com.example.almostdeveloper.mqttclient;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 
 import com.flask.colorpicker.ColorPickerView;
@@ -20,23 +20,40 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    SharedPreferences mqttSavedSettings;
     MqttAndroidClient mqttAndroidClient;
-    MqttConnection mqttConnection = new MqttConnection();
+    MqttConnection mqttConnection;
     ActionBar actionBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mqttSavedSettings = getSharedPreferences("12345", Context.MODE_PRIVATE);
+        actionBar = getSupportActionBar();
+        mqttConnection = getSavedMqttConnection();
         setColorPicker();
         connectToMqtt();
-        actionBar = getSupportActionBar();
         setListenerForSettingsButton();
+    }
+
+    private MqttConnection getSavedMqttConnection() {
+        return new MqttConnection(
+                mqttSavedSettings.getString("mqttBrokerAddress", "no value"),
+                mqttSavedSettings.getString("username", "no value"),
+                mqttSavedSettings.getString("password", "no value"),
+                mqttSavedSettings.getString("redColorTopic", "no value"),
+                mqttSavedSettings.getString("greenColorTopic", "no value"),
+                mqttSavedSettings.getString("blueColorTopic", "no value"),
+                mqttSavedSettings.getString("displayTopic", "no value"),
+                mqttSavedSettings.getString("smallLedTopic", "no value")
+        );
     }
 
     private void setListenerForSettingsButton() {
@@ -69,9 +86,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void connectToMqtt() {
-        mqttConnection.clientId = mqttConnection.clientId + System.currentTimeMillis();
+        String clientId = "ExampleClientID" + System.currentTimeMillis();
 
-        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), mqttConnection.serverUri, mqttConnection.clientId);
+        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), mqttConnection.mqttBrokerAddress, clientId);
         mqttAndroidClient.setCallback(new MqttCallbackExtended() {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
@@ -125,7 +142,8 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.d("1234", "Failed to connect to: " + mqttConnection.serverUri);
+                    Log.d("1234", "Failed to connect to: " + mqttConnection.mqttBrokerAddress);
+                    actionBar.setTitle("MqttClient(Not connected)");
                 }
             });
 
@@ -152,5 +170,26 @@ public class MainActivity extends AppCompatActivity {
             System.err.println("Error Publishing: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK)
+            if (data != null) {
+                mqttSavedSettings
+                    .edit()
+                    .putString("mqttBrokerAddress", data.getStringExtra("mqttBrokerAddress"))
+                    .putString("username", data.getStringExtra("username"))
+                    .putString("password", data.getStringExtra("password"))
+                    .putString("redColorTopic", data.getStringExtra("redColorTopic"))
+                    .putString("greenColorTopic", data.getStringExtra("greenColorTopic"))
+                    .putString("blueColorTopic", data.getStringExtra("blueColorTopic"))
+                    .putString("displayTopic", data.getStringExtra("displayTopic"))
+                    .putString("smallLedTopic", data.getStringExtra("smallLedTopic"))
+                    .apply();
+                mqttConnection = getSavedMqttConnection();
+                connectToMqtt();
+            }
     }
 }

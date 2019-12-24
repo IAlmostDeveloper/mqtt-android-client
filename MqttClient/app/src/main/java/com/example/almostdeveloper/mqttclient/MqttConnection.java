@@ -1,15 +1,28 @@
 package com.example.almostdeveloper.mqttclient;
 
-public class MqttConnection {
-    final String serverUri = "tcp://tailor.cloudmqtt.com:12878";
+class MqttConnection {
 
-    String clientId = "ExampleAndroidClient";
-    final String username = "pyhyvrkj";
-    final String password = "yc_uB67FT97v";
+    String mqttBrokerAddress;
+    String username;
+    String password;
+    String redColorTopic;
+    String greenColorTopic;
+    String blueColorTopic;
+    String displayTopic;
+    String smallLedTopic;
 
-    final String redColorTopic = "pwmred";
-    final String greenColorTopic = "pwmgreen";
-    final String blueColorTopic = "pwmblue";
-    final String displayTopic = "esp";
-    final String smallLedTopic = "led";
+    MqttConnection(String mqttBrokerAddress, String username,
+                   String password, String redColorTopic,
+                   String greenColorTopic, String blueColorTopic,
+                   String displayTopic, String smallLedTopic) {
+
+        this.mqttBrokerAddress = mqttBrokerAddress;
+        this.username = username;
+        this.password = password;
+        this.redColorTopic = redColorTopic;
+        this.greenColorTopic = greenColorTopic;
+        this.blueColorTopic = blueColorTopic;
+        this.displayTopic = displayTopic;
+        this.smallLedTopic = smallLedTopic;
+    }
 }
