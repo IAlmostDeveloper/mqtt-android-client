@@ -40,30 +40,10 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Red color topic:" />
+        android:text="RGB topic:" />
 
     <EditText
-        android:id="@+id/redColorTopic_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Green color topic:" />
-
-    <EditText
-        android:id="@+id/greenColorTopic_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Blue color topic:" />
-
-    <EditText
-        android:id="@+id/blueColorTopic_input"
+        android:id="@+id/rgbTopic_input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

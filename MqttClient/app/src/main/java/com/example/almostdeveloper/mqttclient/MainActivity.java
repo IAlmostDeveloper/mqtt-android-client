@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.JsonToken;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorChangedListener;
@@ -19,6 +21,8 @@ import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
@@ -48,9 +52,7 @@ public class MainActivity extends AppCompatActivity {
                 mqttSavedSettings.getString("mqttBrokerAddress", "no value"),
                 mqttSavedSettings.getString("username", "no value"),
                 mqttSavedSettings.getString("password", "no value"),
-                mqttSavedSettings.getString("redColorTopic", "no value"),
-                mqttSavedSettings.getString("greenColorTopic", "no value"),
-                mqttSavedSettings.getString("blueColorTopic", "no value"),
+                mqttSavedSettings.getString("rgbTopic", "no value"),
                 mqttSavedSettings.getString("displayTopic", "no value"),
                 mqttSavedSettings.getString("smallLedTopic", "no value")
         );
@@ -155,20 +157,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void publishMessage(int R, int G, int B) {
-
         try {
-            MqttMessage rmessage = new MqttMessage();
-            MqttMessage gmessage = new MqttMessage();
-            MqttMessage bmessage = new MqttMessage();
-            rmessage.setPayload(String.valueOf(R).getBytes());
-            gmessage.setPayload(String.valueOf(G).getBytes());
-            bmessage.setPayload(String.valueOf(B).getBytes());
-            mqttAndroidClient.publish(mqttConnection.redColorTopic, rmessage);
-            mqttAndroidClient.publish(mqttConnection.greenColorTopic, gmessage);
-            mqttAndroidClient.publish(mqttConnection.blueColorTopic, bmessage);
-        } catch (MqttException e) {
-            System.err.println("Error Publishing: " + e.getMessage());
-            e.printStackTrace();
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("R", String.valueOf(R));
+            jsonObject.put("G", String.valueOf(G));
+            jsonObject.put("B", String.valueOf(B));
+            MqttMessage mqttMessage = new MqttMessage();
+            mqttMessage.setPayload(jsonObject.toString().getBytes());
+            mqttAndroidClient.publish(mqttConnection.rgbTopic, mqttMessage);
+        } catch (JSONException | MqttException ignored) {
+
         }
     }
 
@@ -178,16 +176,14 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK)
             if (data != null) {
                 mqttSavedSettings
-                    .edit()
-                    .putString("mqttBrokerAddress", data.getStringExtra("mqttBrokerAddress"))
-                    .putString("username", data.getStringExtra("username"))
-                    .putString("password", data.getStringExtra("password"))
-                    .putString("redColorTopic", data.getStringExtra("redColorTopic"))
-                    .putString("greenColorTopic", data.getStringExtra("greenColorTopic"))
-                    .putString("blueColorTopic", data.getStringExtra("blueColorTopic"))
-                    .putString("displayTopic", data.getStringExtra("displayTopic"))
-                    .putString("smallLedTopic", data.getStringExtra("smallLedTopic"))
-                    .apply();
+                        .edit()
+                        .putString("mqttBrokerAddress", data.getStringExtra("mqttBrokerAddress"))
+                        .putString("username", data.getStringExtra("username"))
+                        .putString("password", data.getStringExtra("password"))
+                        .putString("rgbTopic", data.getStringExtra("rgbTopic"))
+                        .putString("displayTopic", data.getStringExtra("displayTopic"))
+                        .putString("smallLedTopic", data.getStringExtra("smallLedTopic"))
+                        .apply();
                 mqttConnection = getSavedMqttConnection();
                 connectToMqtt();
             }
