@@ -1,16 +1,22 @@
 package com.example.almostdeveloper.mqttclient;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.util.JsonToken;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorChangedListener;
+import com.flask.colorpicker.OnColorSelectedListener;
+import com.flask.colorpicker.builder.ColorPickerClickListener;
+import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -34,17 +40,81 @@ public class MainActivity extends AppCompatActivity {
     MqttAndroidClient mqttAndroidClient;
     MqttConnection mqttConnection;
     ActionBar actionBar;
+    Context context;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mqttSavedSettings = getSharedPreferences("12345", Context.MODE_PRIVATE);
+        mqttSavedSettings = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         actionBar = getSupportActionBar();
         mqttConnection = getSavedMqttConnection();
-        setColorPicker();
+        context = this;
+        setDialogButtonListener();
+        setSendButtonListener();
+        setSettingsButtonListener();
+        setBuiltInLedCheckBoxListener();
         connectToMqtt();
-        setListenerForSettingsButton();
+    }
+
+    private void setBuiltInLedCheckBoxListener() {
+        ((CheckBox) findViewById(R.id.built_in_led_checkbox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                publishBuiltInLedMessage(isChecked ? 0 : 1);
+            }
+        });
+    }
+
+    private void setSendButtonListener() {
+        findViewById(R.id.send_text_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText input = findViewById(R.id.text_input);
+                String text = input.getText().toString();
+                if (!text.equals("")) {
+                    publishTextMessage(text);
+                    input.setText("");
+                }
+            }
+        });
+    }
+
+    private void setDialogButtonListener() {
+        findViewById(R.id.change_color_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ColorPickerDialogBuilder
+                        .with(context)
+                        .setTitle("Choose color")
+                        .setOnColorChangedListener(new OnColorChangedListener() {
+                            @Override
+                            public void onColorChanged(int selectedColor) {
+                                float A = (selectedColor >> 24) & 0xff;
+                                float multiplier = (A / 255) * 4;
+                                int R = (selectedColor >> 16) & 0xff;
+                                int G = (selectedColor >> 8) & 0xff;
+                                int B = (selectedColor) & 0xff;
+                                publishRGBMessage((int) (R * multiplier), (int) (G * multiplier), (int) (B * multiplier));
+                            }
+                        })
+                        .initialColor(Color.parseColor("#000000"))
+                        .wheelType(ColorPickerView.WHEEL_TYPE.CIRCLE)
+                        .density(10)
+                        .setPositiveButton("ok", new ColorPickerClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int selectedColor, Integer[] allColors) {
+                            }
+                        })
+                        .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        })
+                        .build()
+                        .show();
+            }
+        });
     }
 
     private MqttConnection getSavedMqttConnection() {
@@ -58,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-    private void setListenerForSettingsButton() {
+    private void setSettingsButtonListener() {
         findViewById(R.id.settings_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -70,21 +140,6 @@ public class MainActivity extends AppCompatActivity {
     private void getNewMqttConnection() {
         Intent intent = new Intent(this, SettingsActivity.class);
         startActivityForResult(intent, 0);
-    }
-
-    private void setColorPicker() {
-        ColorPickerView colorPickerView = findViewById(R.id.color_picker_view);
-        colorPickerView.addOnColorChangedListener(new OnColorChangedListener() {
-            @Override
-            public void onColorChanged(int selectedColor) {
-                float A = (selectedColor >> 24) & 0xff;
-                float multiplier = (A / 255) * 4;
-                int R = (selectedColor >> 16) & 0xff;
-                int G = (selectedColor >> 8) & 0xff;
-                int B = (selectedColor) & 0xff;
-                publishMessage((int) (R * multiplier), (int) (G * multiplier), (int) (B * multiplier));
-            }
-        });
     }
 
     private void connectToMqtt() {
@@ -156,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void publishMessage(int R, int G, int B) {
+    public void publishRGBMessage(int R, int G, int B) {
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("R", String.valueOf(R));
@@ -167,6 +222,26 @@ public class MainActivity extends AppCompatActivity {
             mqttAndroidClient.publish(mqttConnection.rgbTopic, mqttMessage);
         } catch (JSONException | MqttException ignored) {
 
+        }
+    }
+
+    public void publishTextMessage(String text) {
+        MqttMessage mqttMessage = new MqttMessage();
+        mqttMessage.setPayload(text.getBytes());
+        try {
+            mqttAndroidClient.publish(mqttConnection.displayTopic, mqttMessage);
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void publishBuiltInLedMessage(int state) {
+        MqttMessage mqttMessage = new MqttMessage();
+        mqttMessage.setPayload(String.valueOf(state).getBytes());
+        try {
+            mqttAndroidClient.publish(mqttConnection.smallLedTopic, mqttMessage);
+        } catch (MqttException e) {
+            e.printStackTrace();
         }
     }
 

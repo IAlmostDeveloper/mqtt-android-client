@@ -17,7 +17,7 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        mqttSavedSettings = getSharedPreferences("12345", Context.MODE_PRIVATE);
+        mqttSavedSettings = getSharedPreferences("preferences", Context.MODE_PRIVATE);
         setSaveButtonListener();
         setInputFields();
     }
