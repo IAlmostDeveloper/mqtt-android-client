@@ -29,6 +29,8 @@ public class SettingsActivity extends AppCompatActivity {
         ((EditText) findViewById(R.id.rgbTopic_input)).setText(mqttSavedSettings.getString("rgbTopic", "no value"));
         ((EditText) findViewById(R.id.displayTopic_input)).setText(mqttSavedSettings.getString("displayTopic", "no value"));
         ((EditText) findViewById(R.id.smallLedTopic_input)).setText(mqttSavedSettings.getString("smallLedTopic", "no value"));
+        ((EditText) findViewById(R.id.sensorsTopic_input)).setText(mqttSavedSettings.getString("sensorsTopic", "no value"));
+        ((EditText) findViewById(R.id.requestsTopic_input)).setText(mqttSavedSettings.getString("requestsTopic", "no value"));
     }
 
     private void setSaveButtonListener() {
@@ -41,7 +43,9 @@ public class SettingsActivity extends AppCompatActivity {
                         .putExtra("password", ((EditText) findViewById(R.id.password_input)).getText().toString())
                         .putExtra("rgbTopic", ((EditText) findViewById(R.id.rgbTopic_input)).getText().toString())
                         .putExtra("displayTopic", ((EditText) findViewById(R.id.displayTopic_input)).getText().toString())
-                        .putExtra("smallLedTopic", ((EditText) findViewById(R.id.smallLedTopic_input)).getText().toString());
+                        .putExtra("smallLedTopic", ((EditText) findViewById(R.id.smallLedTopic_input)).getText().toString())
+                        .putExtra("sensorsTopic", ((EditText) findViewById(R.id.sensorsTopic_input)).getText().toString())
+                        .putExtra("requestsTopic", ((EditText) findViewById(R.id.requestsTopic_input)).getText().toString());
                 setResult(RESULT_OK, intent);
                 finish();
             }

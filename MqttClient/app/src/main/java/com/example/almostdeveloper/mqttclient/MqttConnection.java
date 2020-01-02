@@ -8,10 +8,13 @@ class MqttConnection {
     String rgbTopic;
     String displayTopic;
     String smallLedTopic;
+    String sensorsTopic;
+    String requestsTopic;
 
     MqttConnection(String mqttBrokerAddress, String username,
                    String password, String rgbTopic,
-                   String displayTopic, String smallLedTopic) {
+                   String displayTopic, String smallLedTopic,
+                   String sensorsTopic, String requestsTopic) {
 
         this.mqttBrokerAddress = mqttBrokerAddress;
         this.username = username;
@@ -19,5 +22,7 @@ class MqttConnection {
         this.rgbTopic = rgbTopic;
         this.displayTopic = displayTopic;
         this.smallLedTopic = smallLedTopic;
+        this.sensorsTopic = sensorsTopic;
+        this.requestsTopic = requestsTopic;
     }
 }

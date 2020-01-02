@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorChangedListener;
@@ -22,6 +24,7 @@ import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -41,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
     MqttConnection mqttConnection;
     ActionBar actionBar;
     Context context;
+    TextView touchSensor;
+    TextView obstacleSensor;
+    TextView lightnessSensor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,11 +56,32 @@ public class MainActivity extends AppCompatActivity {
         actionBar = getSupportActionBar();
         mqttConnection = getSavedMqttConnection();
         context = this;
+        setSensorsTextViews();
         setDialogButtonListener();
         setSendButtonListener();
         setSettingsButtonListener();
+        setRefreshSensorsDataButtonListener();
         setBuiltInLedCheckBoxListener();
         connectToMqtt();
+    }
+
+    private void setSensorsTextViews() {
+        touchSensor = findViewById(R.id.touch_sensor_text);
+        obstacleSensor = findViewById(R.id.obstacle_sensor_text);
+        lightnessSensor = findViewById(R.id.lightness_sensor_text);
+    }
+
+    private void setRefreshSensorsDataButtonListener() {
+        findViewById(R.id.refresh_sensors_data_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    mqttAndroidClient.publish(mqttConnection.requestsTopic, new MqttMessage());
+                } catch (MqttException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private void setBuiltInLedCheckBoxListener() {
@@ -124,7 +151,9 @@ public class MainActivity extends AppCompatActivity {
                 mqttSavedSettings.getString("password", "no value"),
                 mqttSavedSettings.getString("rgbTopic", "no value"),
                 mqttSavedSettings.getString("displayTopic", "no value"),
-                mqttSavedSettings.getString("smallLedTopic", "no value")
+                mqttSavedSettings.getString("smallLedTopic", "no value"),
+                mqttSavedSettings.getString("sensorsTopic", "no value"),
+                mqttSavedSettings.getString("requestsTopic", "no value")
         );
     }
 
@@ -166,8 +195,9 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void messageArrived(String topic, MqttMessage message) throws Exception {
+            public void messageArrived(String topic, MqttMessage message) {
                 Log.d("1234", "Incoming message: " + new String(message.getPayload()));
+                refreshSensorsDataView(message.toString());
             }
 
             @Override
@@ -193,8 +223,22 @@ public class MainActivity extends AppCompatActivity {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-                    actionBar.setTitle("MqttClient(Connected)");
+                    try {
+                        mqttAndroidClient.subscribe(mqttConnection.sensorsTopic, 2, null, new IMqttActionListener() {
+                            @Override
+                            public void onSuccess(IMqttToken asyncActionToken) {
+                                Toast.makeText(getApplicationContext(), "subscribe success", Toast.LENGTH_SHORT).show();
+                            }
 
+                            @Override
+                            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                                Toast.makeText(getApplicationContext(), "subscribe failed", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (MqttException e) {
+                        e.printStackTrace();
+                    }
+                    actionBar.setTitle("MqttClient(Connected)");
                 }
 
                 @Override
@@ -207,6 +251,21 @@ public class MainActivity extends AppCompatActivity {
 
         } catch (MqttException ex) {
             ex.printStackTrace();
+        }
+
+    }
+
+    private void refreshSensorsDataView(String message) {
+        try {
+            JSONObject jsonObject = new JSONObject(message);
+            String touchSensorState = jsonObject.get("touch").toString().equals("0") ? "not pushed" : "pushed";
+            String obstacleSensorState = jsonObject.get("obstacle").toString().equals("1") ? "not crossed" : "crossed";
+            String lightnessSensorState = jsonObject.get("lightness").toString().equals("0") ? "on" : "off";
+            touchSensor.setText("Button: " + touchSensorState);
+            obstacleSensor.setText("Obstacle: " + obstacleSensorState);
+            lightnessSensor.setText("Light: " + lightnessSensorState);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
     }
@@ -258,6 +317,8 @@ public class MainActivity extends AppCompatActivity {
                         .putString("rgbTopic", data.getStringExtra("rgbTopic"))
                         .putString("displayTopic", data.getStringExtra("displayTopic"))
                         .putString("smallLedTopic", data.getStringExtra("smallLedTopic"))
+                        .putString("sensorsTopic", data.getStringExtra("sensorsTopic"))
+                        .putString("requestsTopic", data.getStringExtra("requestsTopic"))
                         .apply();
                 mqttConnection = getSavedMqttConnection();
                 connectToMqtt();
