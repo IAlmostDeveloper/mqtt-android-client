@@ -16,7 +16,6 @@ import android.widget.Toast;
 
 import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.OnColorChangedListener;
-import com.flask.colorpicker.OnColorSelectedListener;
 import com.flask.colorpicker.builder.ColorPickerClickListener;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 
@@ -24,7 +23,6 @@ import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -44,9 +42,8 @@ public class MainActivity extends AppCompatActivity {
     MqttConnection mqttConnection;
     ActionBar actionBar;
     Context context;
-    TextView touchSensor;
-    TextView obstacleSensor;
-    TextView lightnessSensor;
+    TextView humiditySensor;
+    TextView temperatureSensor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,9 +63,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setSensorsTextViews() {
-        touchSensor = findViewById(R.id.touch_sensor_text);
-        obstacleSensor = findViewById(R.id.obstacle_sensor_text);
-        lightnessSensor = findViewById(R.id.lightness_sensor_text);
+        temperatureSensor = findViewById(R.id.temperature_sensor_text);
+        humiditySensor = findViewById(R.id.humidity_sensor_text);
     }
 
     private void setRefreshSensorsDataButtonListener() {
@@ -258,12 +254,10 @@ public class MainActivity extends AppCompatActivity {
     private void refreshSensorsDataView(String message) {
         try {
             JSONObject jsonObject = new JSONObject(message);
-            String touchSensorState = jsonObject.get("touch").toString().equals("0") ? "not pushed" : "pushed";
-            String obstacleSensorState = jsonObject.get("obstacle").toString().equals("1") ? "not crossed" : "crossed";
-            String lightnessSensorState = jsonObject.get("lightness").toString().equals("0") ? "on" : "off";
-            touchSensor.setText("Button: " + touchSensorState);
-            obstacleSensor.setText("Obstacle: " + obstacleSensorState);
-            lightnessSensor.setText("Light: " + lightnessSensorState);
+            String temperatureSensorState = jsonObject.get("temperature").toString();
+            String humiditySensorState = jsonObject.get("humidity").toString();
+            temperatureSensor.setText("Temperature : " + temperatureSensorState + " °C");
+            humiditySensor.setText("Humidity: " + humiditySensorState + " %");
         } catch (JSONException e) {
             e.printStackTrace();
         }
